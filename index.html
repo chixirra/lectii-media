@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecții Markdown</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: Arial, sans-serif;
+            background: #f6f8fa;
+            color: #24292f;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            border: 1px solid #d0d7de;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 22px;
+            background: #ffffff;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        header h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 0;
+            color: #656d76;
+            font-size: 14px;
+        }
+
+        .info {
+            padding: 14px 22px;
+            background: #f6f8fa;
+            font-size: 14px;
+            color: #656d76;
+            border-bottom: 1px solid #d0d7de;
+        }
+
+        .file {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 17px 22px;
+            border-bottom: 1px solid #d0d7de;
+            text-decoration: none;
+            color: #24292f;
+            transition: background 0.2s;
+        }
+
+        .file:hover {
+            background: #f6f8fa;
+        }
+
+        .icon {
+            font-size: 23px;
+            width: 28px;
+        }
+
+        .file-name {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .description {
+            margin-left: auto;
+            color: #656d76;
+            font-size: 12px;
+        }
+
+        footer {
+            padding: 18px;
+            text-align: center;
+            color: #656d76;
+            font-size: 13px;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 15px 10px;
+            }
+
+            .description {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>📚 Lecții Markdown</h1>
+        <p>Materiale de studiu – Producție media</p>
+    </header>
+
+    <div class="info">
+        📁 Repository / Lecții Markdown
+    </div>
+
+    <a href="imagini/" class="file">
+        <span class="icon">📁</span>
+        <span class="file-name">imagini</span>
+        <span class="description">Folder cu imagini</span>
+    </a>
+
+    <a href="markdown-basic.md" class="file">
+        <span class="icon">📄</span>
+        <span class="file-name">markdown-basic.md</span>
+        <span class="description">Markdown de bază</span>
+    </a>
+
+    <a href="markdown-advanced.md" class="file">
+        <span class="icon">📄</span>
+        <span class="file-name">markdown-advanced.md</span>
+        <span class="description">Markdown avansat</span>
+    </a>
+
+    <a href="markdown-fisa.md" class="file">
+        <span class="icon">📝</span>
+        <span class="file-name">markdown-fisa.md</span>
+        <span class="description">Fișă de laborator</span>
+    </a>
+
+    <footer>
+        Realizat pentru disciplina Producție media
+        <br><br>
+        © 2026 – Lecții Markdown
+    </footer>
+
+</div>
+
+</body>
+</html>
