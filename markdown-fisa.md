@@ -1,6 +1,6 @@
 ---
 title: "Document de proiect – Balul Bobocilor 2026"
-author: "[Numele tău], clasa a XII-a"
+author: "popa cristian"
 date: "2026-11-03"
 lang: ro
 ---
