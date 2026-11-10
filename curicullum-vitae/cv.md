@@ -16,15 +16,15 @@ Sunt un elev pasionat de dezvoltarea de aplicații cross-platform, editare video
 | Perioada    | Școala                                                  | Specializarea   |
 |-------------|---------------------------------------------------------|-----------------|
 | 2023 – 2027 | Liceul Tehnologic „Grigore C. Moisil”                   | Producție media |
-| 2015 – 2023 | Școala Gimnazială „Căpitan Aviator Mircea T. Bădulescu” | –               |
+| 2015 – 2023 | Școala Gimnazială ...” | –               |
 
 ## Competențe
 
-- **Dezvoltare Software:** Svelte 5, Tauri v2 (Rust), TypeScript, HTML/CSS, Bun
+- **Dezvoltare Software:** Svelte 5, Tauri v2 (Rust), gpui (Zed Industries), TypeScript, HTML/CSS, Bun
 - **Producție & Montaj Video:** DaVinci Resolve (Fusion, Fairlight, YRGB Color Management)
-- **Design & Layout:** Figma, Inkscape, Scribus
+- **Design & Layout:** Figma, Affinity, Scribus
 - **Instrumente & Control Versiuni:** Git, GitHub, VS Code, Markdown, Linux CLI
-- **Limbi străine:** engleză – nivel B2 / C1
+- **Limbi străine:** engleză – nivel C2
 
 ## Competențe Tehnice Detaliate
 
