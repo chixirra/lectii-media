@@ -30,13 +30,12 @@
             cursor: grabbing;
         }
 
-        /* UI Control Panel */
         #ui-panel {
             position: absolute;
             top: 20px;
             right: 20px;
             width: 300px;
-            background: rgba(15, 23, 42, 0.78);
+            background: rgba(15, 23, 42, 0.82);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.14);
@@ -65,7 +64,6 @@
         .panel-header h2 {
             font-size: 16px;
             font-weight: 600;
-            letter-spacing: 0.3px;
             color: #e2e8f0;
         }
 
@@ -89,7 +87,7 @@
 
         select, input[type="range"] {
             width: 100%;
-            background: rgba(30, 41, 59, 0.9);
+            background: rgba(30, 41, 59, 0.95);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #f8fafc;
             border-radius: 8px;
@@ -97,7 +95,6 @@
             font-size: 13px;
             outline: none;
             cursor: pointer;
-            transition: border-color 0.2s;
         }
 
         select:hover, select:focus {
@@ -159,15 +156,14 @@
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: #f8fafc;
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
-            transition: background 0.2s;
         }
 
         .btn-icon:hover {
@@ -178,7 +174,7 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(15, 23, 42, 0.78);
+            background: rgba(15, 23, 42, 0.82);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #f8fafc;
@@ -189,10 +185,8 @@
             cursor: pointer;
             z-index: 9;
             display: none;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
-        /* Bottom Action Bar */
         #bottom-bar {
             position: absolute;
             bottom: 28px;
@@ -211,10 +205,9 @@
             border-radius: 999px;
             font-size: 15px;
             font-weight: 700;
-            letter-spacing: 0.4px;
             cursor: pointer;
-            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.45);
+            transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -223,10 +216,6 @@
         .primary-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 14px 30px rgba(220, 38, 38, 0.6);
-        }
-
-        .primary-btn:active {
-            transform: translateY(1px);
         }
 
         .primary-btn.reset-mode {
@@ -238,7 +227,7 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(15, 23, 42, 0.65);
+            background: rgba(15, 23, 42, 0.7);
             backdrop-filter: blur(8px);
             padding: 8px 14px;
             border-radius: 10px;
@@ -247,20 +236,32 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             pointer-events: none;
         }
-    </style>
-    <!-- Import Map for Three.js -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
+
+        #error-banner {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #991b1b;
+            color: white;
+            padding: 20px 28px;
+            border-radius: 12px;
+            text-align: center;
+            z-index: 100;
+            max-width: 420px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
-    </script>
+    </style>
 </head>
 <body>
 
-    <div class="hint-badge">🖱️ Rotește camera • Click pe cadou sau apasă butonul</div>
+    <div id="error-banner">
+        <strong>Eroare la încărcarea WebGL / Three.js</strong><br><br>
+        Verifică conexiunea la internet sau activează Hardware Acceleration în browser.
+    </div>
+
+    <div class="hint-badge">🖱️ Trage cu mouse-ul pentru rotire • Scroll pentru zoom • Click pe cadou</div>
 
     <button id="open-menu-btn">⚙️ Setări Scenă</button>
 
@@ -302,7 +303,7 @@
         <div class="control-group">
             <label>Atmosferă & Lumină</label>
             <select id="sky-select">
-                <option value="night">🌙 Noapte de Iarnă (Felinar)</option>
+                <option value="night">🌙 Noapte de Iarnă</option>
                 <option value="sunset">🌅 Apus Rozaliu</option>
                 <option value="day">☀️ Zi Însorită</option>
             </select>
@@ -325,242 +326,785 @@
 
     <div id="canvas-container"></div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    <!-- Standard UMD Three.js + OrbitControls (merge atât pe file:// cât și pe GitHub Pages) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 
-        // ==========================================
-        // 1. PROCEDURAL WEB AUDIO SOUND SYNTHESIZER
-        // ==========================================
-        class SoundFX {
-            constructor() {
-                this.ctx = null;
-                this.enabled = true;
+    <script>
+        window.addEventListener('DOMContentLoaded', function () {
+            if (typeof THREE === 'undefined') {
+                document.getElementById('error-banner').style.display = 'block';
+                return;
             }
 
-            init() {
-                if (!this.ctx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    this.ctx = new AudioContext();
+            // ==========================================
+            // 1. PROCEDURAL WEB AUDIO SOUND SYNTHESIZER
+            // ==========================================
+            class SoundFX {
+                constructor() {
+                    this.ctx = null;
+                    this.enabled = true;
                 }
-                if (this.ctx.state === 'suspended') {
-                    this.ctx.resume();
+
+                init() {
+                    if (!this.ctx) {
+                        const AudioContext = window.AudioContext || window.webkitAudioContext;
+                        this.ctx = new AudioContext();
+                    }
+                    if (this.ctx.state === 'suspended') {
+                        this.ctx.resume();
+                    }
                 }
-            }
 
-            playClick() {
-                if (!this.enabled) return;
-                this.init();
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.06);
-                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.06);
-            }
-
-            playAnticipation() {
-                if (!this.enabled) return;
-                this.init();
-                const now = this.ctx.currentTime;
-                for (let i = 0; i < 6; i++) {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    const t = now + i * 0.09;
-                    osc.frequency.setValueAtTime(160 + i * 25, t);
-                    gain.gain.setValueAtTime(0.12, t);
-                    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(t);
-                    osc.stop(t + 0.07);
-                }
-            }
-
-            playPopAndChime() {
-                if (!this.enabled) return;
-                this.init();
-                const now = this.ctx.currentTime;
-
-                // Lid Pop Sound
-                const popOsc = this.ctx.createOscillator();
-                const popGain = this.ctx.createGain();
-                popOsc.type = 'sine';
-                popOsc.frequency.setValueAtTime(140, now);
-                popOsc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
-                popGain.gain.setValueAtTime(0.35, now);
-                popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                popOsc.connect(popGain);
-                popGain.connect(this.ctx.destination);
-                popOsc.start(now);
-                popOsc.stop(now + 0.16);
-
-                // Magical Sparkle Arpeggio (C5 - E5 - G5 - B5 - C6 - E6)
-                const notes = [523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
-                notes.forEach((freq, idx) => {
+                playClick() {
+                    if (!this.enabled) return;
+                    this.init();
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
                     osc.type = 'sine';
-                    const start = now + 0.08 + idx * 0.075;
-                    osc.frequency.setValueAtTime(freq, start);
-                    gain.gain.setValueAtTime(0.001, start);
-                    gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.0008, start + 0.65);
+                    osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.06);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
-                    osc.start(start);
-                    osc.stop(start + 0.68);
-                });
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.06);
+                }
+
+                playAnticipation() {
+                    if (!this.enabled) return;
+                    this.init();
+                    const now = this.ctx.currentTime;
+                    for (let i = 0; i < 6; i++) {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        const t = now + i * 0.09;
+                        osc.frequency.setValueAtTime(160 + i * 25, t);
+                        gain.gain.setValueAtTime(0.12, t);
+                        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(t);
+                        osc.stop(t + 0.07);
+                    }
+                }
+
+                playPopAndChime() {
+                    if (!this.enabled) return;
+                    this.init();
+                    const now = this.ctx.currentTime;
+
+                    const popOsc = this.ctx.createOscillator();
+                    const popGain = this.ctx.createGain();
+                    popOsc.type = 'sine';
+                    popOsc.frequency.setValueAtTime(140, now);
+                    popOsc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
+                    popGain.gain.setValueAtTime(0.35, now);
+                    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    popOsc.connect(popGain);
+                    popGain.connect(this.ctx.destination);
+                    popOsc.start(now);
+                    popOsc.stop(now + 0.16);
+
+                    const notes = [523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        const start = now + 0.08 + idx * 0.075;
+                        osc.frequency.setValueAtTime(freq, start);
+                        gain.gain.setValueAtTime(0.001, start);
+                        gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.0008, start + 0.65);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(start);
+                        osc.stop(start + 0.68);
+                    });
+                }
+
+                playClose() {
+                    if (!this.enabled) return;
+                    this.init();
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(340, now);
+                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.19);
+                }
             }
 
-            playClose() {
-                if (!this.enabled) return;
-                this.init();
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(340, now);
-                osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.19);
-            }
-        }
+            const sfx = new SoundFX();
 
-        const sfx = new SoundFX();
+            // ==========================================
+            // 2. THREE.JS SCENE, CAMERA & RENDERER
+            // ==========================================
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0b132b);
+            scene.fog = new THREE.FogExp2(0x0b132b, 0.028);
 
-        // ==========================================
-        // 2. THREE.JS SCENE, CAMERA & RENDERER
-        // ==========================================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0b132b);
-        scene.fog = new THREE.FogExp2(0x0b132b, 0.028);
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 3.2, 8.8);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 3.2, 8.8);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.1;
-        container.appendChild(renderer.domElement);
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+            controls.maxPolarAngle = Math.PI / 2 - 0.04;
+            controls.minDistance = 4;
+            controls.maxDistance = 16;
+            controls.target.set(0, 1.5, 0);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.maxPolarAngle = Math.PI / 2 - 0.04;
-        controls.minDistance = 4;
-        controls.maxDistance = 16;
-        controls.target.set(0, 1.5, 0);
+            // ==========================================
+            // 3. LIGHTING & ENVIRONMENT
+            // ==========================================
+            const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.95);
+            scene.add(hemiLight);
 
-        // ==========================================
-        // 3. LIGHTING & ENVIRONMENT
-        // ==========================================
-        const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.85);
-        scene.add(hemiLight);
+            const dirLight = new THREE.DirectionalLight(0xfff1f2, 1.3);
+            dirLight.position.set(6, 10, 6);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 1;
+            dirLight.shadow.camera.far = 25;
+            const d = 8;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
 
-        const dirLight = new THREE.DirectionalLight(0xfff1f2, 1.6);
-        dirLight.position.set(6, 10, 6);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 1;
-        dirLight.shadow.camera.far = 25;
-        const d = 8;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
-        scene.add(dirLight);
+            const giftGlowLight = new THREE.PointLight(0xfbbf24, 0, 6);
+            giftGlowLight.position.set(1.15, 0.8, 0.5);
+            scene.add(giftGlowLight);
 
-        // Warm magic light inside gift box
-        const giftGlowLight = new THREE.PointLight(0xfbbf24, 0, 6);
-        giftGlowLight.position.set(1.15, 0.8, 0.5);
-        scene.add(giftGlowLight);
-
-        // ==========================================
-        // 4. SNOWY GROUND & BACKGROUND TREES
-        // ==========================================
-        const groundGeo = new THREE.CylinderGeometry(18, 18, 1, 64);
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0xf1f5f9,
-            roughness: 0.85,
-            metalness: 0.05
-        });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.position.y = -0.5;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Decorative Snow Mounds & Pine Trees
-        function createPineTree(x, z, scale) {
-            const tree = new THREE.Group();
-            const trunk = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.15, 0.22, 0.8, 8),
-                new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+            // ==========================================
+            // 4. SNOWY GROUND & PINE TREES
+            // ==========================================
+            const ground = new THREE.Mesh(
+                new THREE.CylinderGeometry(18, 18, 1, 64),
+                new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.85 })
             );
-            trunk.position.y = 0.4;
-            trunk.castShadow = true;
-            tree.add(trunk);
+            ground.position.y = -0.5;
+            ground.receiveShadow = true;
+            scene.add(ground);
 
-            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.8 });
-            const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 });
+            function createPineTree(x, z, scale) {
+                const tree = new THREE.Group();
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.22, 0.8, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+                );
+                trunk.position.y = 0.4;
+                trunk.castShadow = true;
+                tree.add(trunk);
 
-            for (let i = 0; i < 3; i++) {
-                const radius = 1.1 - i * 0.28;
-                const height = 1.3 - i * 0.15;
-                const yPos = 1.1 + i * 0.75;
+                const foliageMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.8 });
+                const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 });
 
-                const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 10), foliageMat);
-                cone.position.y = yPos;
-                cone.castShadow = true;
-                cone.receiveShadow = true;
-                tree.add(cone);
+                for (let i = 0; i < 3; i++) {
+                    const radius = 1.1 - i * 0.28;
+                    const height = 1.3 - i * 0.15;
+                    const yPos = 1.1 + i * 0.75;
 
-                const cap = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.65, height * 0.45, 10), snowCapMat);
-                cap.position.y = yPos + height * 0.28;
-                tree.add(cap);
+                    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 10), foliageMat);
+                    cone.position.y = yPos;
+                    cone.castShadow = true;
+                    tree.add(cone);
+
+                    const cap = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.65, height * 0.45, 10), snowCapMat);
+                    cap.position.y = yPos + height * 0.28;
+                    tree.add(cap);
+                }
+
+                tree.position.set(x, 0, z);
+                tree.scale.setScalar(scale);
+                scene.add(tree);
             }
 
-            tree.position.set(x, 0, z);
-            tree.scale.setScalar(scale);
-            scene.add(tree);
-        }
+            [
+                [-4.5, -4.0, 1.1], [4.8, -3.5, 1.25], [-5.8, 1.2, 0.95],
+                [5.5, 2.0, 0.9], [-2.2, -6.2, 1.35], [2.4, -5.8, 1.05]
+            ].forEach(([x, z, s]) => createPineTree(x, z, s));
 
-        const treeCoords = [
-            [-4.5, -4.0, 1.1], [4.8, -3.5, 1.25], [-5.8, 1.2, 0.95],
-            [5.5, 2.0, 0.9], [-2.2, -6.2, 1.35], [2.4, -5.8, 1.05]
-        ];
-        treeCoords.forEach(([x, z, s]) => createPineTree(x, z, s));
+            // ==========================================
+            // 5. SNOWMAN CHARACTER
+            // ==========================================
+            const snowman = new THREE.Group();
+            snowman.position.set(-0.95, 0, 0.2);
+            snowman.rotation.y = 0.42;
+            scene.add(snowman);
 
-        // ==========================================
-        // 5. SNOWMAN CHARACTER
-        // ==========================================
-        const snowman = new THREE.Group();
-        snowman.position.set(-0.95, 0, 0.2);
-        snowman.rotation.y = 0.42; // Facing slightly toward the gift
-        scene.add(snowman);
+            const snowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.65 });
 
-        const snowMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.65,
-            metalness: 0.02
+            const bodyBottom = new THREE.Mesh(new THREE.SphereGeometry(0.95, 32, 32), snowMat);
+            bodyBottom.position.y = 0.85;
+            bodyBottom.castShadow = true;
+            bodyBottom.receiveShadow = true;
+            snowman.add(bodyBottom);
+
+            const bodyMid = new THREE.Mesh(new THREE.SphereGeometry(0.68, 32, 32), snowMat);
+            bodyMid.position.y = 2.05;
+            bodyMid.castShadow = true;
+            bodyMid.receiveShadow = true;
+            snowman.add(bodyMid);
+
+            const coalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
+            [2.22, 1.98, 1.74].forEach((y, idx) => {
+                const btn = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), coalMat);
+                btn.position.set(0, y, 0.65 - Math.abs(idx - 1) * 0.04);
+                snowman.add(btn);
+            });
+
+            const scarfMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.8 });
+            const scarfRing = new THREE.Mesh(new THREE.TorusGeometry(0.54, 0.11, 16, 32), scarfMat);
+            scarfRing.rotation.x = Math.PI / 2;
+            scarfRing.position.y = 2.55;
+            scarfRing.castShadow = true;
+            snowman.add(scarfRing);
+
+            const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.65, 0.08), scarfMat);
+            scarfTail.position.set(0.36, 2.25, 0.42);
+            scarfTail.rotation.set(0.15, 0, -0.22);
+            snowman.add(scarfTail);
+
+            const headGroup = new THREE.Group();
+            headGroup.position.y = 3.02;
+            snowman.add(headGroup);
+
+            const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.48, 32, 32), snowMat);
+            headMesh.castShadow = true;
+            headGroup.add(headMesh);
+
+            [-0.16, 0.16].forEach(x => {
+                const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16), coalMat);
+                eye.position.set(x, 0.12, 0.43);
+                headGroup.add(eye);
+            });
+
+            const carrotMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 });
+            const nose = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.42, 16), carrotMat);
+            nose.rotation.x = Math.PI / 2;
+            nose.position.set(0, 0.02, 0.62);
+            headGroup.add(nose);
+
+            for (let i = -2; i <= 2; i++) {
+                const pebble = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 12), coalMat);
+                const angle = i * 0.24;
+                pebble.position.set(Math.sin(angle) * 0.22, -0.14 + Math.abs(i) * 0.02, Math.cos(angle) * 0.44);
+                headGroup.add(pebble);
+            }
+
+            // Hats
+            const topHatGroup = new THREE.Group();
+            const hatMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+            const hatBandMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6 });
+            const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.06, 32), hatMat);
+            brim.position.y = 0.42;
+            const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.38, 0.48, 32), hatMat);
+            crown.position.y = 0.66;
+            const band = new THREE.Mesh(new THREE.CylinderGeometry(0.385, 0.385, 0.09, 32), hatBandMat);
+            band.position.y = 0.48;
+            topHatGroup.add(brim, crown, band);
+            topHatGroup.rotation.z = -0.08;
+            headGroup.add(topHatGroup);
+
+            const beanieGroup = new THREE.Group();
+            const beanieMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.85 });
+            const beanieDome = new THREE.Mesh(new THREE.SphereGeometry(0.49, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2), beanieMat);
+            beanieDome.position.y = 0.1;
+            const beanieCuff = new THREE.Mesh(new THREE.TorusGeometry(0.47, 0.08, 12, 24), snowMat);
+            beanieCuff.rotation.x = Math.PI / 2;
+            beanieCuff.position.y = 0.14;
+            const pompom = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), snowMat);
+            pompom.position.y = 0.62;
+            beanieGroup.add(beanieDome, beanieCuff, pompom);
+            beanieGroup.visible = false;
+            headGroup.add(beanieGroup);
+
+            // Twig Arms
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x5c3a21, roughness: 0.9 });
+            function createTwigArm(isRight) {
+                const armPivot = new THREE.Group();
+                armPivot.position.set(isRight ? 0.62 : -0.62, 2.25, 0.05);
+
+                const mainBranch = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.95, 8), woodMat);
+                mainBranch.position.set(isRight ? 0.42 : -0.42, 0.15, 0);
+                mainBranch.rotation.z = isRight ? -1.15 : 1.15;
+                armPivot.add(mainBranch);
+
+                const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.32, 8), woodMat);
+                twig.position.set(isRight ? 0.72 : -0.72, 0.36, 0.06);
+                twig.rotation.z = isRight ? -0.55 : 0.55;
+                armPivot.add(twig);
+
+                snowman.add(armPivot);
+                return armPivot;
+            }
+
+            const leftArm = createTwigArm(false);
+            const rightArm = createTwigArm(true);
+
+            // ==========================================
+            // 6. GIFT BOX & SURPRISE ITEMS
+            // ==========================================
+            const giftGroup = new THREE.Group();
+            giftGroup.position.set(1.15, 0, 0.45);
+            giftGroup.rotation.y = -0.35;
+            scene.add(giftGroup);
+
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.45 });
+            const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.3 });
+
+            const boxBase = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.95, 1.1), boxMat);
+            boxBase.position.y = 0.475;
+            boxBase.castShadow = true;
+            boxBase.receiveShadow = true;
+            giftGroup.add(boxBase);
+
+            const rib1 = new THREE.Mesh(new THREE.BoxGeometry(1.13, 0.96, 0.22), ribbonMat);
+            rib1.position.y = 0.48;
+            const rib2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.96, 1.13), ribbonMat);
+            rib2.position.y = 0.48;
+            giftGroup.add(rib1, rib2);
+
+            const lidPivot = new THREE.Group();
+            lidPivot.position.set(0, 0.95, -0.58);
+            giftGroup.add(lidPivot);
+
+            const lidGroup = new THREE.Group();
+            lidGroup.position.set(0, 0.1, 0.58);
+            lidPivot.add(lidGroup);
+
+            const lidMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.22, 1.2), boxMat);
+            lidMesh.castShadow = true;
+            lidGroup.add(lidMesh);
+
+            const lidRib1 = new THREE.Mesh(new THREE.BoxGeometry(1.23, 0.23, 0.22), ribbonMat);
+            const lidRib2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.23, 1.23), ribbonMat);
+            lidGroup.add(lidRib1, lidRib2);
+
+            for (let i = 0; i < 4; i++) {
+                const loop = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 10, 20), ribbonMat);
+                loop.position.y = 0.18;
+                loop.rotation.y = (i * Math.PI) / 2 + Math.PI / 4;
+                loop.rotation.x = Math.PI / 3;
+                lidGroup.add(loop);
+            }
+
+            const surpriseHolder = new THREE.Group();
+            surpriseHolder.position.set(0, 0.45, 0);
+            surpriseHolder.scale.setScalar(0.01);
+            giftGroup.add(surpriseHolder);
+
+            function buildStar() {
+                const shape = new THREE.Shape();
+                const spikes = 5, outerR = 0.45, innerR = 0.2;
+                for (let i = 0; i < spikes * 2; i++) {
+                    const r = i % 2 === 0 ? outerR : innerR;
+                    const a = (i / (spikes * 2)) * Math.PI * 2 - Math.PI / 2;
+                    const x = Math.cos(a) * r;
+                    const y = Math.sin(a) * r;
+                    if (i === 0) shape.moveTo(x, y);
+                    else shape.lineTo(x, y);
+                }
+                shape.closePath();
+                const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.14, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04 });
+                geo.center();
+                const mat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xf59e0b, emissiveIntensity: 0.45, roughness: 0.2, metalness: 0.6 });
+                return new THREE.Mesh(geo, mat);
+            }
+
+            function buildPenguin() {
+                const p = new THREE.Group();
+                const blackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+                const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+                const orangeMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 });
+
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), blackMat);
+                body.scale.set(1, 1.25, 0.9);
+                const belly = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 24), whiteMat);
+                belly.position.set(0, -0.03, 0.12);
+                belly.scale.set(0.95, 1.15, 0.7);
+                const beak = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.16, 12), orangeMat);
+                beak.rotation.x = Math.PI / 2;
+                beak.position.set(0, 0.14, 0.34);
+
+                [-0.11, 0.11].forEach(x => {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), whiteMat);
+                    eye.position.set(x, 0.22, 0.25);
+                    p.add(eye);
+                });
+                p.add(body, belly, beak);
+                return p;
+            }
+
+            function buildHeart() {
+                const x = 0, y = 0;
+                const heartShape = new THREE.Shape();
+                heartShape.moveTo(x, y + 0.15);
+                heartShape.bezierCurveTo(x, y + 0.15, x - 0.05, y + 0.35, x - 0.25, y + 0.35);
+                heartShape.bezierCurveTo(x - 0.55, y + 0.35, x - 0.55, y, x - 0.55, y);
+                heartShape.bezierCurveTo(x - 0.55, y - 0.25, x - 0.35, y - 0.48, x, y - 0.65);
+                heartShape.bezierCurveTo(x + 0.35, y - 0.48, x + 0.55, y - 0.25, x + 0.55, y);
+                heartShape.bezierCurveTo(x + 0.55, y, x + 0.55, y + 0.35, x + 0.25, y + 0.35);
+                heartShape.bezierCurveTo(x + 0.1, y + 0.35, x, y + 0.15, x, y + 0.15);
+
+                const geo = new THREE.ExtrudeGeometry(heartShape, { depth: 0.18, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05 });
+                geo.center();
+                const mat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.4, roughness: 0.15 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.scale.setScalar(0.8);
+                return mesh;
+            }
+
+            function buildSnowGlobe() {
+                const g = new THREE.Group();
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.34, 0.18, 24), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 }));
+                base.position.y = -0.26;
+                const glass = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.36, 32, 32),
+                    new THREE.MeshStandardMaterial({ color: 0xe0f2fe, opacity: 0.55, transparent: true, roughness: 0.1 })
+                );
+                const miniTree = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.34, 12), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
+                miniTree.position.y = -0.02;
+                g.add(base, glass, miniTree);
+                return g;
+            }
+
+            const surprises = {
+                star: buildStar(),
+                penguin: buildPenguin(),
+                heart: buildHeart(),
+                snowglobe: buildSnowGlobe()
+            };
+
+            Object.entries(surprises).forEach(([key, obj]) => {
+                obj.visible = key === 'star';
+                surpriseHolder.add(obj);
+            });
+
+            // ==========================================
+            // 7. PARTICLE SYSTEMS
+            // ==========================================
+            const snowCount = 900;
+            const snowGeo = new THREE.BufferGeometry();
+            const snowPos = new Float32Array(snowCount * 3);
+            const snowVel = new Float32Array(snowCount);
+
+            for (let i = 0; i < snowCount; i++) {
+                snowPos[i * 3] = (Math.random() - 0.5) * 26;
+                snowPos[i * 3 + 1] = Math.random() * 14;
+                snowPos[i * 3 + 2] = (Math.random() - 0.5) * 26;
+                snowVel[i] = 0.015 + Math.random() * 0.03;
+            }
+            snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
+            const snowSystem = new THREE.Points(
+                snowGeo,
+                new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, transparent: true, opacity: 0.85 })
+            );
+            scene.add(snowSystem);
+
+            const burstCount = 140;
+            const burstGeo = new THREE.BufferGeometry();
+            const burstPos = new Float32Array(burstCount * 3);
+            const burstColors = new Float32Array(burstCount * 3);
+            const burstVelocities = [];
+
+            const palette = [
+                new THREE.Color(0xfacc15),
+                new THREE.Color(0x38bdf8),
+                new THREE.Color(0xf43f5e),
+                new THREE.Color(0x4ade80),
+                new THREE.Color(0xffffff)
+            ];
+
+            for (let i = 0; i < burstCount; i++) {
+                burstPos[i * 3] = 1.15;
+                burstPos[i * 3 + 1] = -10;
+                burstPos[i * 3 + 2] = 0.45;
+                const c = palette[i % palette.length];
+                burstColors[i * 3] = c.r;
+                burstColors[i * 3 + 1] = c.g;
+                burstColors[i * 3 + 2] = c.b;
+                burstVelocities.push(new THREE.Vector3());
+            }
+            burstGeo.setAttribute('position', new THREE.BufferAttribute(burstPos, 3));
+            burstGeo.setAttribute('color', new THREE.BufferAttribute(burstColors, 3));
+
+            const burstMat = new THREE.PointsMaterial({
+                size: 0.18,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0
+            });
+            const burstSystem = new THREE.Points(burstGeo, burstMat);
+            scene.add(burstSystem);
+
+            let burstActive = false;
+
+            function triggerParticleBurst() {
+                burstActive = true;
+                burstMat.opacity = 1.0;
+                const posArr = burstGeo.attributes.position.array;
+                for (let i = 0; i < burstCount; i++) {
+                    posArr[i * 3] = giftGroup.position.x + (Math.random() - 0.5) * 0.4;
+                    posArr[i * 3 + 1] = 1.05;
+                    posArr[i * 3 + 2] = giftGroup.position.z + (Math.random() - 0.5) * 0.4;
+
+                    const theta = Math.random() * Math.PI * 2;
+                    const speed = 0.04 + Math.random() * 0.09;
+                    burstVelocities[i].set(
+                        Math.cos(theta) * speed,
+                        0.11 + Math.random() * 0.14,
+                        Math.sin(theta) * speed
+                    );
+                }
+                burstGeo.attributes.position.needsUpdate = true;
+            }
+
+            // ==========================================
+            // 8. ANIMATION STATE & INTERACTION
+            // ==========================================
+            let giftState = 'closed';
+            let stateTimer = 0;
+            let lidAngle = 0;
+            let surpriseProgress = 0;
+
+            const actionBtn = document.getElementById('action-btn');
+
+            function toggleGift() {
+                if (giftState === 'closed') {
+                    giftState = 'anticipation';
+                    stateTimer = 0;
+                    sfx.playAnticipation();
+                    actionBtn.disabled = true;
+                } else if (giftState === 'opened') {
+                    giftState = 'closed';
+                    sfx.playClose();
+                    actionBtn.textContent = '🎁 Deschide Cadoul';
+                    actionBtn.classList.remove('reset-mode');
+                }
+            }
+
+            actionBtn.addEventListener('click', toggleGift);
+
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+            let downPos = { x: 0, y: 0 };
+
+            renderer.domElement.addEventListener('pointerdown', (e) => {
+                downPos = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('pointerup', (e) => {
+                const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+                if (dist > 6) return;
+
+                pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(pointer, camera);
+                const hits = raycaster.intersectObjects(giftGroup.children, true);
+                if (hits.length > 0 && giftState !== 'anticipation') {
+                    toggleGift();
+                }
+            });
+
+            // ==========================================
+            // 9. UI MENU CONTROLS
+            // ==========================================
+            const uiPanel = document.getElementById('ui-panel');
+            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const openMenuBtn = document.getElementById('open-menu-btn');
+
+            closeMenuBtn.addEventListener('click', () => {
+                sfx.playClick();
+                uiPanel.classList.add('collapsed');
+                openMenuBtn.style.display = 'block';
+            });
+
+            openMenuBtn.addEventListener('click', () => {
+                sfx.playClick();
+                uiPanel.classList.remove('collapsed');
+                openMenuBtn.style.display = 'none';
+            });
+
+            document.getElementById('surprise-select').addEventListener('change', (e) => {
+                sfx.playClick();
+                const val = e.target.value;
+                Object.entries(surprises).forEach(([k, obj]) => {
+                    obj.visible = k === val;
+                });
+            });
+
+            document.getElementById('hat-select').addEventListener('change', (e) => {
+                sfx.playClick();
+                const val = e.target.value;
+                topHatGroup.visible = val === 'tophat';
+                beanieGroup.visible = val === 'beanie';
+            });
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    sfx.playClick();
+                    document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    boxMat.color.set(btn.dataset.box);
+                    ribbonMat.color.set(btn.dataset.ribbon);
+                });
+            });
+
+            document.getElementById('sky-select').addEventListener('change', (e) => {
+                sfx.playClick();
+                const mode = e.target.value;
+                if (mode === 'night') {
+                    scene.background.set(0x0b132b);
+                    scene.fog.color.set(0x0b132b);
+                    hemiLight.color.set(0xdbeafe);
+                    hemiLight.intensity = 0.95;
+                    dirLight.color.set(0xfff1f2);
+                    dirLight.intensity = 1.3;
+                } else if (mode === 'sunset') {
+                    scene.background.set(0x4c1d95);
+                    scene.fog.color.set(0x701a75);
+                    hemiLight.color.set(0xfbcfe8);
+                    hemiLight.intensity = 1.1;
+                    dirLight.color.set(0xfb923c);
+                    dirLight.intensity = 1.8;
+                } else if (mode === 'day') {
+                    scene.background.set(0x7dd3fc);
+                    scene.fog.color.set(0xbae6fd);
+                    hemiLight.color.set(0xffffff);
+                    hemiLight.intensity = 1.35;
+                    dirLight.color.set(0xffffff);
+                    dirLight.intensity = 1.9;
+                }
+            });
+
+            const snowSlider = document.getElementById('snow-slider');
+            const snowVal = document.getElementById('snow-val');
+            snowSlider.addEventListener('input', (e) => {
+                const pct = parseInt(e.target.value, 10);
+                snowVal.textContent = pct + '%';
+                snowGeo.setDrawRange(0, Math.floor((pct / 100) * snowCount));
+            });
+            snowGeo.setDrawRange(0, Math.floor(0.6 * snowCount));
+
+            const soundToggle = document.getElementById('sound-toggle');
+            soundToggle.addEventListener('click', () => {
+                sfx.enabled = !sfx.enabled;
+                soundToggle.textContent = sfx.enabled ? '🔊' : '🔇';
+                if (sfx.enabled) sfx.playClick();
+            });
+
+            // ==========================================
+            // 10. MAIN RENDER LOOP
+            // ==========================================
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const dt = clock.getDelta();
+                const elapsed = clock.getElapsedTime();
+
+                if (giftState === 'closed') {
+                    snowman.position.y = Math.abs(Math.sin(elapsed * 2.2)) * 0.04;
+                    snowman.rotation.z = Math.sin(elapsed * 1.8) * 0.035;
+                    headGroup.rotation.z = Math.sin(elapsed * 2.0 + 0.5) * 0.05;
+                    rightArm.rotation.z = Math.sin(elapsed * 2.5) * 0.1;
+                    leftArm.rotation.z = -Math.sin(elapsed * 2.5) * 0.08;
+                } else if (giftState === 'anticipation') {
+                    stateTimer += dt;
+                    snowman.rotation.z = -0.14 + Math.sin(elapsed * 35) * 0.03;
+                    rightArm.rotation.z = 0.65 + Math.sin(elapsed * 30) * 0.15;
+                    giftGroup.rotation.z = Math.sin(elapsed * 45) * 0.08;
+                    giftGroup.position.y = Math.abs(Math.sin(elapsed * 25)) * 0.08;
+
+                    if (stateTimer >= 0.55) {
+                        giftState = 'opened';
+                        giftGroup.rotation.z = 0;
+                        giftGroup.position.y = 0;
+                        sfx.playPopAndChime();
+                        triggerParticleBurst();
+                        actionBtn.disabled = false;
+                        actionBtn.textContent = '🔄 Închide Cadoul';
+                        actionBtn.classList.add('reset-mode');
+                    }
+                } else if (giftState === 'opened') {
+                    snowman.position.y = Math.abs(Math.sin(elapsed * 6.5)) * 0.22;
+                    snowman.rotation.z = Math.sin(elapsed * 4.5) * 0.06;
+                    rightArm.rotation.z = 0.75 + Math.sin(elapsed * 9) * 0.35;
+                    leftArm.rotation.z = -0.75 - Math.sin(elapsed * 9) * 0.35;
+                }
+
+                const targetLid = giftState === 'opened' ? -Math.PI * 0.68 : 0;
+                lidAngle += (targetLid - lidAngle) * Math.min(1, dt * 10);
+                lidPivot.rotation.x = lidAngle;
+
+                const targetSurprise = giftState === 'opened' ? 1 : 0;
+                surpriseProgress += (targetSurprise - surpriseProgress) * Math.min(1, dt * 7);
+
+                surpriseHolder.position.y = 0.45 + surpriseProgress * 1.15 + (giftState === 'opened' ? Math.sin(elapsed * 3.2) * 0.08 : 0);
+                surpriseHolder.scale.setScalar(Math.max(0.001, surpriseProgress));
+                surpriseHolder.rotation.y += dt * 1.8;
+
+                giftGlowLight.intensity = surpriseProgress * 3.2;
+
+                const sArr = snowGeo.attributes.position.array;
+                for (let i = 0; i < snowCount; i++) {
+                    sArr[i * 3 + 1] -= snowVel[i];
+                    sArr[i * 3] += Math.sin(elapsed + i) * 0.004;
+                    if (sArr[i * 3 + 1] < 0) {
+                        sArr[i * 3 + 1] = 14;
+                    }
+                }
+                snowGeo.attributes.position.needsUpdate = true;
+
+                if (burstActive) {
+                    const bArr = burstGeo.attributes.position.array;
+                    for (let i = 0; i < burstCount; i++) {
+                        burstVelocities[i].y -= 0.0045;
+                        bArr[i * 3] += burstVelocities[i].x;
+                        bArr[i * 3 + 1] += burstVelocities[i].y;
+                        bArr[i * 3 + 2] += burstVelocities[i].z;
+                    }
+                    burstGeo.attributes.position.needsUpdate = true;
+                    burstMat.opacity -= dt * 0.42;
+                    if (burstMat.opacity <= 0) {
+                        burstMat.opacity = 0;
+                        burstActive = false;
+                    }
+                }
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         });
-
-        // Bottom Sphere
-        const bodyBottom = new THR
+    </script>
+</body>
+</html>
