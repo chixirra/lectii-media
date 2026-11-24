@@ -156,14 +156,15 @@
             background: rgba(255, 255, 255, 0.1);
             border: none;
             color: #f8fafc;
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 15px;
+            transition: background 0.2s;
         }
 
         .btn-icon:hover {
@@ -261,7 +262,7 @@
         Verifică conexiunea la internet sau activează Hardware Acceleration în browser.
     </div>
 
-    <div class="hint-badge">🖱️ Trage cu mouse-ul pentru rotire • Scroll pentru zoom • Click pe cadou</div>
+    <div class="hint-badge">🖱️ Trage pentru rotire • Scroll pentru zoom • Click oriunde pentru sunet & muzică</div>
 
     <button id="open-menu-btn">⚙️ Setări Scenă</button>
 
@@ -315,8 +316,13 @@
         </div>
 
         <div class="control-group toggle-row">
-            <label style="margin:0;">Efecte Sonore (Synth)</label>
-            <button class="btn-icon" id="sound-toggle" title="Pornește/Oprește Sunetul">🔊</button>
+            <label style="margin:0;">Muzică de Fundal (Winter Box)</label>
+            <button class="btn-icon" id="music-toggle" title="Pornește/Oprește Muzica">🎵</button>
+        </div>
+
+        <div class="control-group toggle-row">
+            <label style="margin:0;">Efecte Sonore (SFX)</label>
+            <button class="btn-icon" id="sound-toggle" title="Pornește/Oprește Efectele">🔊</button>
         </div>
     </div>
 
@@ -326,7 +332,6 @@
 
     <div id="canvas-container"></div>
 
-    <!-- Standard UMD Three.js + OrbitControls (merge atât pe file:// cât și pe GitHub Pages) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 
@@ -338,12 +343,37 @@
             }
 
             // ==========================================
-            // 1. PROCEDURAL WEB AUDIO SOUND SYNTHESIZER
+            // 1. PROCEDURAL WEB AUDIO ENGINE (MUSIC + SFX)
             // ==========================================
-            class SoundFX {
+            class SoundEngine {
                 constructor() {
                     this.ctx = null;
-                    this.enabled = true;
+                    this.sfxEnabled = true;
+                    this.musicEnabled = true;
+                    this.musicStarted = false;
+                    this.stepIndex = 0;
+                    this.timerId = null;
+
+                    // Winter Music-Box & Pad sequence (16 steps, 3/4 waltz feel)
+                    // Notes: [melodyFreq, bassFreq]
+                    this.sequence = [
+                        [659.25, 130.81], // E5 + C3
+                        [783.99, null],   // G5
+                        [1046.50, null],  // C6
+                        [987.77, 174.61], // B5 + F3
+                        [783.99, null],   // G5
+                        [659.25, null],   // E5
+                        [587.33, 196.00], // D5 + G3
+                        [659.25, null],   // E5
+                        [783.99, null],   // G5
+                        [523.25, 130.81], // C5 + C3
+                        [659.25, null],   // E5
+                        [783.99, null],   // G5
+                        [880.00, 146.83], // A5 + D3
+                        [783.99, null],   // G5
+                        [659.25, 196.00], // E5 + G3
+                        [587.33, null]    // D5
+                    ];
                 }
 
                 init() {
@@ -354,17 +384,92 @@
                     if (this.ctx.state === 'suspended') {
                         this.ctx.resume();
                     }
+                    if (!this.musicStarted && this.musicEnabled) {
+                        this.startMusicLoop();
+                    }
+                }
+
+                startMusicLoop() {
+                    if (this.timerId) return;
+                    this.musicStarted = true;
+                    const playStep = () => {
+                        if (this.musicEnabled && this.ctx && this.ctx.state === 'running') {
+                            const [melody, bass] = this.sequence[this.stepIndex % this.sequence.length];
+                            this.playMusicBoxNote(melody);
+                            if (bass) this.playWarmPadNote(bass);
+                            this.stepIndex++;
+                        }
+                    };
+                    playStep();
+                    this.timerId = setInterval(playStep, 520);
+                }
+
+                playMusicBoxNote(freq) {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const overtone = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const overtoneGain = this.ctx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    // Subtle celesta/bell harmonic
+                    overtone.type = 'sine';
+                    overtone.frequency.setValueAtTime(freq * 2, now);
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.065, now + 0.025);
+                    gain.gain.exponentialRampToValueAtTime(0.0005, now + 1.4);
+
+                    overtoneGain.gain.setValueAtTime(0.001, now);
+                    overtoneGain.gain.linearRampToValueAtTime(0.015, now + 0.015);
+                    overtoneGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.5);
+
+                    osc.connect(gain);
+                    overtone.connect(overtoneGain);
+                    gain.connect(this.ctx.destination);
+                    overtoneGain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    overtone.start(now);
+                    osc.stop(now + 1.45);
+                    overtone.stop(now + 0.55);
+                }
+
+                playWarmPadNote(freq) {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const filter = this.ctx.createBiquadFilter();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    filter.type = 'lowpass';
+                    filter.frequency.setValueAtTime(420, now);
+
+                    gain.gain.setValueAtTime(0.001, now);
+                    gain.gain.linearRampToValueAtTime(0.055, now + 0.25);
+                    gain.gain.exponentialRampToValueAtTime(0.0008, now + 1.8);
+
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 1.85);
                 }
 
                 playClick() {
-                    if (!this.enabled) return;
                     this.init();
+                    if (!this.sfxEnabled) return;
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(600, this.ctx.currentTime);
                     osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.06);
-                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.14, this.ctx.currentTime);
                     gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
@@ -373,8 +478,8 @@
                 }
 
                 playAnticipation() {
-                    if (!this.enabled) return;
                     this.init();
+                    if (!this.sfxEnabled) return;
                     const now = this.ctx.currentTime;
                     for (let i = 0; i < 6; i++) {
                         const osc = this.ctx.createOscillator();
@@ -392,8 +497,8 @@
                 }
 
                 playPopAndChime() {
-                    if (!this.enabled) return;
                     this.init();
+                    if (!this.sfxEnabled) return;
                     const now = this.ctx.currentTime;
 
                     const popOsc = this.ctx.createOscillator();
@@ -401,7 +506,7 @@
                     popOsc.type = 'sine';
                     popOsc.frequency.setValueAtTime(140, now);
                     popOsc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
-                    popGain.gain.setValueAtTime(0.35, now);
+                    popGain.gain.setValueAtTime(0.32, now);
                     popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
                     popOsc.connect(popGain);
                     popGain.connect(this.ctx.destination);
@@ -416,7 +521,7 @@
                         const start = now + 0.08 + idx * 0.075;
                         osc.frequency.setValueAtTime(freq, start);
                         gain.gain.setValueAtTime(0.001, start);
-                        gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+                        gain.gain.linearRampToValueAtTime(0.15, start + 0.02);
                         gain.gain.exponentialRampToValueAtTime(0.0008, start + 0.65);
                         osc.connect(gain);
                         gain.connect(this.ctx.destination);
@@ -426,15 +531,15 @@
                 }
 
                 playClose() {
-                    if (!this.enabled) return;
                     this.init();
+                    if (!this.sfxEnabled) return;
                     const now = this.ctx.currentTime;
                     const osc = this.ctx.createOscillator();
                     const gain = this.ctx.createGain();
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(340, now);
                     osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
-                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.setValueAtTime(0.18, now);
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
                     osc.connect(gain);
                     gain.connect(this.ctx.destination);
@@ -443,7 +548,12 @@
                 }
             }
 
-            const sfx = new SoundFX();
+            const audio = new SoundEngine();
+
+            // Unlock background music automatically on first user gesture anywhere on the page
+            ['pointerdown', 'keydown'].forEach(evt => {
+                window.addEventListener(evt, () => audio.init(), { once: true });
+            });
 
             // ==========================================
             // 2. THREE.JS SCENE, CAMERA & RENDERER
@@ -894,11 +1004,11 @@
                 if (giftState === 'closed') {
                     giftState = 'anticipation';
                     stateTimer = 0;
-                    sfx.playAnticipation();
+                    audio.playAnticipation();
                     actionBtn.disabled = true;
                 } else if (giftState === 'opened') {
                     giftState = 'closed';
-                    sfx.playClose();
+                    audio.playClose();
                     actionBtn.textContent = '🎁 Deschide Cadoul';
                     actionBtn.classList.remove('reset-mode');
                 }
@@ -935,19 +1045,19 @@
             const openMenuBtn = document.getElementById('open-menu-btn');
 
             closeMenuBtn.addEventListener('click', () => {
-                sfx.playClick();
+                audio.playClick();
                 uiPanel.classList.add('collapsed');
                 openMenuBtn.style.display = 'block';
             });
 
             openMenuBtn.addEventListener('click', () => {
-                sfx.playClick();
+                audio.playClick();
                 uiPanel.classList.remove('collapsed');
                 openMenuBtn.style.display = 'none';
             });
 
             document.getElementById('surprise-select').addEventListener('change', (e) => {
-                sfx.playClick();
+                audio.playClick();
                 const val = e.target.value;
                 Object.entries(surprises).forEach(([k, obj]) => {
                     obj.visible = k === val;
@@ -955,7 +1065,7 @@
             });
 
             document.getElementById('hat-select').addEventListener('change', (e) => {
-                sfx.playClick();
+                audio.playClick();
                 const val = e.target.value;
                 topHatGroup.visible = val === 'tophat';
                 beanieGroup.visible = val === 'beanie';
@@ -963,7 +1073,7 @@
 
             document.querySelectorAll('.color-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    sfx.playClick();
+                    audio.playClick();
                     document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     boxMat.color.set(btn.dataset.box);
@@ -972,7 +1082,7 @@
             });
 
             document.getElementById('sky-select').addEventListener('change', (e) => {
-                sfx.playClick();
+                audio.playClick();
                 const mode = e.target.value;
                 if (mode === 'night') {
                     scene.background.set(0x0b132b);
@@ -1007,11 +1117,20 @@
             });
             snowGeo.setDrawRange(0, Math.floor(0.6 * snowCount));
 
+            const musicToggle = document.getElementById('music-toggle');
+            musicToggle.addEventListener('click', () => {
+                audio.musicEnabled = !audio.musicEnabled;
+                audio.init();
+                musicToggle.textContent = audio.musicEnabled ? '🎵' : '🔇';
+                musicToggle.style.opacity = audio.musicEnabled ? '1' : '0.5';
+            });
+
             const soundToggle = document.getElementById('sound-toggle');
             soundToggle.addEventListener('click', () => {
-                sfx.enabled = !sfx.enabled;
-                soundToggle.textContent = sfx.enabled ? '🔊' : '🔇';
-                if (sfx.enabled) sfx.playClick();
+                audio.sfxEnabled = !audio.sfxEnabled;
+                soundToggle.textContent = audio.sfxEnabled ? '🔊' : '🔇';
+                soundToggle.style.opacity = audio.sfxEnabled ? '1' : '0.5';
+                if (audio.sfxEnabled) audio.playClick();
             });
 
             // ==========================================
@@ -1041,7 +1160,7 @@
                         giftState = 'opened';
                         giftGroup.rotation.z = 0;
                         giftGroup.position.y = 0;
-                        sfx.playPopAndChime();
+                        audio.playPopAndChime();
                         triggerParticleBurst();
                         actionBtn.disabled = false;
                         actionBtn.textContent = '🔄 Închide Cadoul';
