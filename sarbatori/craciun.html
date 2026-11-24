@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Om de Zăpadă & Cadou 3D — WebGL</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+            background-color: #0b132b;
+            color: #f8fafc;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* UI Control Panel */
+        #ui-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        #ui-panel.collapsed {
+            transform: translateX(calc(100% + 30px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .panel-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: #e2e8f0;
+        }
+
+        .control-group {
+            margin-bottom: 14px;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .control-group label span {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:hover, select:focus {
+            border-color: #38bdf8;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(51, 65, 85, 0.9);
+            border: none;
+            margin-top: 4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        .color-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-btn {
+            flex: 1;
+            height: 28px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.06);
+        }
+
+        .color-btn.active {
+            border-color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #f8fafc;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #open-menu-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f8fafc;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 9;
+            display: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Bottom Action Bar */
+        #bottom-bar {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(220, 38, 38, 0.6);
+        }
+
+        .primary-btn:active {
+            transform: translateY(1px);
+        }
+
+        .primary-btn.reset-mode {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            box-shadow: 0 10px 25px rgba(2, 132, 199, 0.45);
+        }
+
+        .hint-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+        }
+    </style>
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div class="hint-badge">🖱️ Rotește camera • Click pe cadou sau apasă butonul</div>
+
+    <button id="open-menu-btn">⚙️ Setări Scenă</button>
+
+    <div id="ui-panel">
+        <div class="panel-header">
+            <h2>❄️ Personalizare Scenă</h2>
+            <button class="btn-icon" id="close-menu-btn" title="Ascunde meniul">✕</button>
+        </div>
+
+        <div class="control-group">
+            <label>Surpriza din Cadou</label>
+            <select id="surprise-select">
+                <option value="star">⭐ Stea Aurie Strălucitoare</option>
+                <option value="penguin">🐧 Mini-Pinguin Vesel</option>
+                <option value="heart">💖 Inimă de Cristal</option>
+                <option value="snowglobe">🔮 Glob de Zăpadă Magic</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Accesoriu Om de Zăpadă</label>
+            <select id="hat-select">
+                <option value="tophat">🎩 Joben Clasic</option>
+                <option value="beanie">🧶 Căciulă de Iarnă</option>
+                <option value="none">❄️ Fără Pălărie</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Culoare Cutie Cadou</label>
+            <div class="color-row" id="gift-colors">
+                <button class="color-btn active" data-box="#dc2626" data-ribbon="#facc15" style="background: #dc2626;" title="Roșu & Auriu"></button>
+                <button class="color-btn" data-box="#2563eb" data-ribbon="#f8fafc" style="background: #2563eb;" title="Albastru & Alb"></button>
+                <button class="color-btn" data-box="#059669" data-ribbon="#f43f5e" style="background: #059669;" title="Verde & Roșu"></button>
+                <button class="color-btn" data-box="#7c3aed" data-ribbon="#38bdf8" style="background: #7c3aed;" title="Mov & Bleu"></button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Atmosferă & Lumină</label>
+            <select id="sky-select">
+                <option value="night">🌙 Noapte de Iarnă (Felinar)</option>
+                <option value="sunset">🌅 Apus Rozaliu</option>
+                <option value="day">☀️ Zi Însorită</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label>Intensitate Ninsoare <span id="snow-val">60%</span></label>
+            <input type="range" id="snow-slider" min="0" max="100" value="60">
+        </div>
+
+        <div class="control-group toggle-row">
+            <label style="margin:0;">Efecte Sonore (Synth)</label>
+            <button class="btn-icon" id="sound-toggle" title="Pornește/Oprește Sunetul">🔊</button>
+        </div>
+    </div>
+
+    <div id="bottom-bar">
+        <button class="primary-btn" id="action-btn">🎁 Deschide Cadoul</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==========================================
+        // 1. PROCEDURAL WEB AUDIO SOUND SYNTHESIZER
+        // ==========================================
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playClick() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.06);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.06);
+            }
+
+            playAnticipation() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                for (let i = 0; i < 6; i++) {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    const t = now + i * 0.09;
+                    osc.frequency.setValueAtTime(160 + i * 25, t);
+                    gain.gain.setValueAtTime(0.12, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(t);
+                    osc.stop(t + 0.07);
+                }
+            }
+
+            playPopAndChime() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                // Lid Pop Sound
+                const popOsc = this.ctx.createOscillator();
+                const popGain = this.ctx.createGain();
+                popOsc.type = 'sine';
+                popOsc.frequency.setValueAtTime(140, now);
+                popOsc.frequency.exponentialRampToValueAtTime(520, now + 0.14);
+                popGain.gain.setValueAtTime(0.35, now);
+                popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                popOsc.connect(popGain);
+                popGain.connect(this.ctx.destination);
+                popOsc.start(now);
+                popOsc.stop(now + 0.16);
+
+                // Magical Sparkle Arpeggio (C5 - E5 - G5 - B5 - C6 - E6)
+                const notes = [523.25, 659.25, 783.99, 987.77, 1046.50, 1318.51];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    const start = now + 0.08 + idx * 0.075;
+                    osc.frequency.setValueAtTime(freq, start);
+                    gain.gain.setValueAtTime(0.001, start);
+                    gain.gain.linearRampToValueAtTime(0.16, start + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0008, start + 0.65);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(start);
+                    osc.stop(start + 0.68);
+                });
+            }
+
+            playClose() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(340, now);
+                osc.frequency.exponentialRampToValueAtTime(120, now + 0.18);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.19);
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // ==========================================
+        // 2. THREE.JS SCENE, CAMERA & RENDERER
+        // ==========================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0b132b);
+        scene.fog = new THREE.FogExp2(0x0b132b, 0.028);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 3.2, 8.8);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.maxPolarAngle = Math.PI / 2 - 0.04;
+        controls.minDistance = 4;
+        controls.maxDistance = 16;
+        controls.target.set(0, 1.5, 0);
+
+        // ==========================================
+        // 3. LIGHTING & ENVIRONMENT
+        // ==========================================
+        const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 0.85);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff1f2, 1.6);
+        dirLight.position.set(6, 10, 6);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 25;
+        const d = 8;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.bias = -0.0005;
+        scene.add(dirLight);
+
+        // Warm magic light inside gift box
+        const giftGlowLight = new THREE.PointLight(0xfbbf24, 0, 6);
+        giftGlowLight.position.set(1.15, 0.8, 0.5);
+        scene.add(giftGlowLight);
+
+        // ==========================================
+        // 4. SNOWY GROUND & BACKGROUND TREES
+        // ==========================================
+        const groundGeo = new THREE.CylinderGeometry(18, 18, 1, 64);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0xf1f5f9,
+            roughness: 0.85,
+            metalness: 0.05
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Decorative Snow Mounds & Pine Trees
+        function createPineTree(x, z, scale) {
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.22, 0.8, 8),
+                new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+            );
+            trunk.position.y = 0.4;
+            trunk.castShadow = true;
+            tree.add(trunk);
+
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.8 });
+            const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 });
+
+            for (let i = 0; i < 3; i++) {
+                const radius = 1.1 - i * 0.28;
+                const height = 1.3 - i * 0.15;
+                const yPos = 1.1 + i * 0.75;
+
+                const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, height, 10), foliageMat);
+                cone.position.y = yPos;
+                cone.castShadow = true;
+                cone.receiveShadow = true;
+                tree.add(cone);
+
+                const cap = new THREE.Mesh(new THREE.ConeGeometry(radius * 0.65, height * 0.45, 10), snowCapMat);
+                cap.position.y = yPos + height * 0.28;
+                tree.add(cap);
+            }
+
+            tree.position.set(x, 0, z);
+            tree.scale.setScalar(scale);
+            scene.add(tree);
+        }
+
+        const treeCoords = [
+            [-4.5, -4.0, 1.1], [4.8, -3.5, 1.25], [-5.8, 1.2, 0.95],
+            [5.5, 2.0, 0.9], [-2.2, -6.2, 1.35], [2.4, -5.8, 1.05]
+        ];
+        treeCoords.forEach(([x, z, s]) => createPineTree(x, z, s));
+
+        // ==========================================
+        // 5. SNOWMAN CHARACTER
+        // ==========================================
+        const snowman = new THREE.Group();
+        snowman.position.set(-0.95, 0, 0.2);
+        snowman.rotation.y = 0.42; // Facing slightly toward the gift
+        scene.add(snowman);
+
+        const snowMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.65,
+            metalness: 0.02
+        });
+
+        // Bottom Sphere
+        const bodyBottom = new THR
